@@ -15,10 +15,14 @@ use pocketmine\block\BlockIdentifier as BID;
 use pocketmine\block\BlockLegacyIds;
 use pocketmine\block\BlockToolType;
 use pocketmine\inventory\CreativeInventory;
+use pocketmine\item\ItemBlock;
 use pocketmine\item\ItemFactory;
-use pocketmine\item\ItemIds;
+use pocketmine\item\ItemIdentifier;
+use pocketmine\item\ToolTier;
 use pocketmine\Server;
 use pocketmine\utils\SingletonTrait;
+use skh6075\revivalvanilla\data\BlockIds;
+use skh6075\revivalvanilla\data\ItemIds;
 use skh6075\revivalvanilla\task\async\RuntimeIdsRegister;
 
 final class BlockManager{
@@ -29,14 +33,16 @@ final class BlockManager{
 	}
 
 	private function __construct(){
-		$this->registerAllRuntimeIds();
 		$this->registerAllBlocks();
+		$this->registerAllRuntimeIds();
 		$this->registerAllCreativeItems();
 	}
 
-	private function registerAllBlocks(): void{
-		$this->registerBlock(new Campfire(new BID(BlockLegacyIds::CAMPFIRE, 0, ItemIds::CAMPFIRE), "Campfire", new BlockBreakInfo(2, BlockToolType::AXE)));
-		$this->registerBlock(new Campfire(new BID(545, 0, -290), "Soul Campfire", new BlockBreakInfo(2, BlockToolType::AXE)));
+	private function registerAllBlocks() : void{
+		$this->registerBlock(new Campfire(new BID(BlockIds::CAMPFIRE, 0, ItemIds::CAMPFIRE), "Campfire", new BlockBreakInfo(2, BlockToolType::AXE)));
+		$this->registerBlock(new Campfire(new BID(BlockIds::SOUL_CAMPFIRE, 0, ItemIds::SOUL_CAMPFIRE), "Soul Campfire", new BlockBreakInfo(2, BlockToolType::AXE)));
+
+		$this->registerBlock(new Chain(new BID(BlockIds::CHAIN, 0, ItemIds::CHAIN), "Chain", new BlockBreakInfo(5, BlockToolType::PICKAXE, ToolTier::WOOD()->getHarvestLevel())));
 	}
 
 	private function registerAllRuntimeIds() : void{
@@ -51,9 +57,12 @@ final class BlockManager{
 	}
 
 	private function registerBlock(Block $block) : void{
+		$idInfo = $block->getIdInfo();
+		$itemId = $idInfo->getItemId();
+		if(255 - $idInfo->getBlockId() !== $idInfo->getItemId()){
+			ItemFactory::getInstance()->register(new ItemBlock(new ItemIdentifier($itemId, 0), $block), true);
+		}
 		BlockFactory::getInstance()->register($block, true);
-		ItemFactory::getInstance()->register($block->asItem(), true);
-		CreativeInventory::getInstance()->add($block->asItem());
 	}
 
 	private function registerAllCreativeItems() : void{
