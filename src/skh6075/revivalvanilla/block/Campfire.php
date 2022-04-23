@@ -73,7 +73,7 @@ class Campfire extends Opaque{
 	}
 
 	public function onEntityInside(Entity $entity) : bool{
-		if($entity instanceof Player && !$entity->hasFiniteResources()){
+		if($this->extinguish || ($entity instanceof Player && !$entity->hasFiniteResources())){
 			return false;
 		}
 		$entity->setOnFire(4);
