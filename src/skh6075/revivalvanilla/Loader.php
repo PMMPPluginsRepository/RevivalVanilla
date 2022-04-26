@@ -6,7 +6,7 @@ namespace skh6075\revivalvanilla;
 
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\SingletonTrait;
-use skh6075\revivalvanilla\block\BlockManager;
+use skh6075\revivalvanilla\data\Expansion;
 
 final class Loader extends PluginBase{
 	use SingletonTrait;
@@ -15,10 +15,10 @@ final class Loader extends PluginBase{
 		return self::$instance;
 	}
 
-	private BlockManager $blockManager;
+	private Expansion $expansion;
 
 	protected function onLoad() : void{
 		self::$instance = $this;
-		$this->blockManager = BlockManager::getInstance();
+		$this->expansion = Expansion::getInstance();
 	}
 }

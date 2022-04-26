@@ -6,29 +6,30 @@
 
 declare(strict_types=1);
 
-namespace skh6075\revivalvanilla\block;
+namespace skh6075\revivalvanilla\data;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockBreakInfo;
 use pocketmine\block\BlockFactory;
 use pocketmine\block\BlockIdentifier as BID;
-use pocketmine\block\BlockLegacyIds;
 use pocketmine\block\BlockToolType;
 use pocketmine\inventory\CreativeInventory;
 use pocketmine\item\ItemBlock;
 use pocketmine\item\ItemFactory;
-use pocketmine\item\ItemIdentifier;
+use pocketmine\item\ItemIdentifier as IID;
 use pocketmine\item\ToolTier;
 use pocketmine\Server;
 use pocketmine\utils\SingletonTrait;
-use skh6075\revivalvanilla\data\BlockIds;
-use skh6075\revivalvanilla\data\ItemIds;
+use skh6075\revivalvanilla\block\BlockIds;
+use skh6075\revivalvanilla\block\Campfire;
+use skh6075\revivalvanilla\block\Chain;
+use skh6075\revivalvanilla\item\ItemIds;
 use skh6075\revivalvanilla\task\async\RuntimeIdsRegister;
 
-final class BlockManager{
+final class Expansion{
 	use SingletonTrait;
 
-	public static function getInstance() : BlockManager{
+	public static function getInstance() : Expansion{
 		return self::$instance ??= new self;
 	}
 
@@ -45,23 +46,13 @@ final class BlockManager{
 		$this->registerBlock(new Chain(new BID(BlockIds::CHAIN, 0, ItemIds::CHAIN), "Chain", new BlockBreakInfo(5, BlockToolType::PICKAXE, ToolTier::WOOD()->getHarvestLevel())));
 	}
 
-	private function registerAllRuntimeIds() : void{
-		RuntimeIdsRegister::register();
-		$asyncPool = Server::getInstance()->getAsyncPool();
-		foreach($asyncPool->getRunningWorkers() as $workerId){
-			$asyncPool->submitTaskToWorker(new RuntimeIdsRegister(), $workerId);
-		}
-		$asyncPool->addWorkerStartHook(function(int $workerId) use ($asyncPool) : void{
-			$asyncPool->submitTaskToWorker(new RuntimeIdsRegister(), $workerId);
-		});
-	}
-
 	private function registerBlock(Block $block) : void{
 		$idInfo = $block->getIdInfo();
 		$itemId = $idInfo->getItemId();
 		if(255 - $idInfo->getBlockId() !== $idInfo->getItemId()){
-			ItemFactory::getInstance()->register(new ItemBlock(new ItemIdentifier($itemId, 0), $block), true);
+			ItemFactory::getInstance()->register(new ItemBlock(new IID($itemId, 0), $block), true);
 		}
+
 		BlockFactory::getInstance()->register($block, true);
 	}
 
@@ -75,5 +66,16 @@ final class BlockManager{
 				$inv->add($item);
 			}
 		}
+	}
+
+	private function registerAllRuntimeIds() : void{
+		RuntimeIdsRegister::register();
+		$asyncPool = Server::getInstance()->getAsyncPool();
+		foreach($asyncPool->getRunningWorkers() as $workerId){
+			$asyncPool->submitTaskToWorker(new RuntimeIdsRegister(), $workerId);
+		}
+		$asyncPool->addWorkerStartHook(function(int $workerId) use ($asyncPool) : void{
+			$asyncPool->submitTaskToWorker(new RuntimeIdsRegister(), $workerId);
+		});
 	}
 }
