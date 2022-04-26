@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace skh6075\revivalvanilla\block;
+namespace skh6075\revivalvanilla\data\resource;
 
 interface BlockIds{
     public const AIR = 0;

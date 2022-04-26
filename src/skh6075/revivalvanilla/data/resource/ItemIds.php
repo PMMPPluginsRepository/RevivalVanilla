@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace skh6075\revivalvanilla\item;
+namespace skh6075\revivalvanilla\data\resource;
 
 interface ItemIds{
     public const QUARTZ_BRICKS = -304;

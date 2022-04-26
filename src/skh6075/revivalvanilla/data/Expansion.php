@@ -13,6 +13,7 @@ use pocketmine\block\BlockBreakInfo;
 use pocketmine\block\BlockFactory;
 use pocketmine\block\BlockIdentifier as BID;
 use pocketmine\block\BlockToolType;
+use pocketmine\block\tile\TileFactory;
 use pocketmine\inventory\CreativeInventory;
 use pocketmine\item\ItemBlock;
 use pocketmine\item\ItemFactory;
@@ -20,10 +21,13 @@ use pocketmine\item\ItemIdentifier as IID;
 use pocketmine\item\ToolTier;
 use pocketmine\Server;
 use pocketmine\utils\SingletonTrait;
-use skh6075\revivalvanilla\block\BlockIds;
 use skh6075\revivalvanilla\block\Campfire;
 use skh6075\revivalvanilla\block\Chain;
-use skh6075\revivalvanilla\item\ItemIds;
+use skh6075\revivalvanilla\block\tile\campfire\RegularCampfireTile;
+use skh6075\revivalvanilla\block\tile\campfire\SoulCampfireTile;
+use skh6075\revivalvanilla\data\resource\BlockIds;
+use skh6075\revivalvanilla\data\resource\ItemIds;
+use skh6075\revivalvanilla\data\resource\TileIds;
 use skh6075\revivalvanilla\task\async\RuntimeIdsRegister;
 
 final class Expansion{
@@ -34,14 +38,22 @@ final class Expansion{
 	}
 
 	private function __construct(){
+		$this->registerAllTiles();
 		$this->registerAllBlocks();
 		$this->registerAllRuntimeIds();
 		$this->registerAllCreativeItems();
 	}
 
+	private function registerAllTiles(): void{
+		/** @var TileFactory $tileFactory */
+		$tileFactory = TileFactory::getInstance();
+		$tileFactory->register(RegularCampfireTile::class, [TileIds::CAMPFIRE, TileIds::LEGACY_CAMPFIRE]);
+		$tileFactory->register(SoulCampfireTile::class, [TileIds::SOUL_CAMPFIRE, TileIds::LEGACY_SOUL_CAMPFIRE]);
+	}
+
 	private function registerAllBlocks() : void{
-		$this->registerBlock(new Campfire(new BID(BlockIds::CAMPFIRE, 0, ItemIds::CAMPFIRE), "Campfire", new BlockBreakInfo(2, BlockToolType::AXE)));
-		$this->registerBlock(new Campfire(new BID(BlockIds::SOUL_CAMPFIRE, 0, ItemIds::SOUL_CAMPFIRE), "Soul Campfire", new BlockBreakInfo(2, BlockToolType::AXE)));
+		$this->registerBlock(new Campfire(new BID(BlockIds::CAMPFIRE, 0, ItemIds::CAMPFIRE, RegularCampfireTile::class), "Campfire", new BlockBreakInfo(2, BlockToolType::AXE)));
+		$this->registerBlock(new Campfire(new BID(BlockIds::SOUL_CAMPFIRE, 0, ItemIds::SOUL_CAMPFIRE, SoulCampfireTile::class), "Soul Campfire", new BlockBreakInfo(2, BlockToolType::AXE)));
 
 		$this->registerBlock(new Chain(new BID(BlockIds::CHAIN, 0, ItemIds::CHAIN), "Chain", new BlockBreakInfo(5, BlockToolType::PICKAXE, ToolTier::WOOD()->getHarvestLevel())));
 	}

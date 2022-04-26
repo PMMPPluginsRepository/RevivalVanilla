@@ -8,15 +8,15 @@ use pocketmine\block\Opaque;
 use pocketmine\entity\Entity;
 use pocketmine\event\entity\EntityDamageByBlockEvent;
 use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\item\Food;
 use pocketmine\item\Item;
+use pocketmine\item\ItemFactory;
 use pocketmine\item\Shovel;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\protocol\ActorEventPacket;
-use pocketmine\network\mcpe\protocol\types\ActorEvent;
 use pocketmine\player\Player;
-use pocketmine\world\sound\FireExtinguishSound;
+use skh6075\revivalvanilla\block\tile\CampfireTile;
 use skh6075\revivalvanilla\block\utils\HorizontalBlockTrait;
 
 class Campfire extends Opaque{
@@ -25,32 +25,34 @@ class Campfire extends Opaque{
 		readStateFromData as readFacingFromData;
 	}
 
-	private const EXTINGUISH_META = 2;
+	protected bool $extinguish = false;
 
-	/** ignition state */
-	private bool $extinguish = false;
+	protected function getExtinguishMetaShift() : int{
+		return 2; //default
+	}
+
+	protected function readExtinguishFromMeta(int $meta) : void{
+		$this->setExtinguish((bool) ($meta >> $this->getExtinguishMetaShift()));
+	}
+
+	protected function writeExtinguishToMeta() : int{
+		return $this->getExtinguish() << $this->getExtinguishMetaShift();
+	}
+
+	protected function writeStateToMeta() : int{
+		return $this->writeExtinguishToMeta() | $this->writeFacingToMeta();
+	}
 
 	public function readStateFromData(int $id, int $stateMeta) : void{
-		$this->extinguish = (bool) ($stateMeta >> self::EXTINGUISH_META);
+		$this->readExtinguishFromMeta($stateMeta);
 		$this->readFacingFromData($id, $stateMeta);
-	}
-
-	public function setExtinguish(bool $extinguish) : void{
-		$this->extinguish = $extinguish;
-	}
-
-	public function getExtinguish() : bool{
-		return $this->extinguish;
 	}
 
 	public function getStateBitmask() : int{
 		return 0b111;
 	}
 
-	protected function writeStateToMeta() : int{
-		return ($this->extinguish << self::EXTINGUISH_META) | $this->writeFacingToMeta();
-	}
-
+	/** @return AxisAlignedBB[] */
 	protected function recalculateCollisionBoxes() : array{
 		return [AxisAlignedBB::one()->trim(Facing::UP, 0.5)];
 	}
@@ -58,26 +60,70 @@ class Campfire extends Opaque{
 	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null) : bool{
 		if($face === Facing::UP && $item instanceof Shovel){
 			$block = clone $this;
-			if($player !== null && $block->getExtinguish()){
-				$this->position->getWorld()->broadcastPacketToViewers($this->position, ActorEventPacket::create($player->getId(), ActorEvent::ARM_SWING, 0));
-				$this->position->getWorld()->addSound($this->position, new FireExtinguishSound());
-			}
-			$block->setExtinguish(!$this->getExtinguish());
+			$block->setExtinguish(!$block->getExtinguish());
 			$this->position->getWorld()->setBlock($this->position, $block);
+			return true;
 		}
-		return parent::onInteract($item, $face, $clickVector, $player);
+		if($player !== null){
+			$tile = $this->position->getWorld()->getTile($this->position);
+			if($tile instanceof CampfireTile && $tile->addItem($item)){
+				$item->pop();
+				$this->position->getWorld()->setBlock($this->position, $this);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	public function onEntityInside(Entity $entity) : bool{
+		if(
+			!$this->extinguish ||
+			($entity instanceof Player && !$entity->hasFiniteResources())
+		){
+			return false;
+		}
+		$entity->setOnFire(8);
+		$entity->attack(new EntityDamageByBlockEvent($this, $entity, EntityDamageEvent::CAUSE_FIRE, 1));
+		return true;
 	}
 
 	public function hasEntityCollision() : bool{
 		return true;
 	}
 
-	public function onEntityInside(Entity $entity) : bool{
-		if($this->extinguish || ($entity instanceof Player && !$entity->hasFiniteResources())){
-			return false;
+	public function getExtinguish() : bool{
+		return $this->extinguish;
+	}
+
+	public function setExtinguish(bool $extinguish) : self{
+		$this->extinguish = $extinguish;
+		return $this;
+	}
+
+	public function onScheduledUpdate() : void{
+		$tile = $this->position->getWorld()->getTile($this->position);
+		if(!$tile instanceof CampfireTile || $tile->isClosed()){
+			return;
 		}
-		$entity->setOnFire(4);
-		$entity->attack(new EntityDamageByBlockEvent($this, $entity, EntityDamageEvent::CAUSE_FIRE, 1.0));
-		return true;
+
+		$canChange = false;
+		foreach($tile->getContents() as $slot => $item){
+			$tile->increaseSlotTime($slot);
+			if($tile->getItemTime($slot) < 30){
+				continue;
+			}
+			$tile->setItem(ItemFactory::air(), $slot);
+			$tile->setSlotTime($slot, 0);
+
+			$this->position->getWorld()->dropItem(
+				source: $this->position->add(0, 1, 0),
+				item: ItemFactory::getInstance()->get(CampfireTile::RECIPES[$item->getId()] ?? $item->getId())
+			);
+			$canChange = true;
+		}
+		if($canChange){
+			$this->position->getWorld()->setBlock($this->position, $this);
+		}
+		$this->position->getWorld()->scheduleDelayedBlockUpdate($this->position, 20);
 	}
 }
