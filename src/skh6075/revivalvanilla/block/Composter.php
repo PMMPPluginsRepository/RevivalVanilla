@@ -110,7 +110,7 @@ class Composter extends Opaque{
 			$item->pop();
 			$player->getWorld()->broadcastPacketToViewers($this->position, SpawnParticleEffectPacket::create(
 				dimensionId: DimensionIds::OVERWORLD,
-				actorUniqueId: $player->getId(),
+				actorUniqueId: -1,
 				position: $this->position->add(0.5, 0.5, 0.5),
 				particleName: "minecraft:crop_growth_emitter",
 				molangVariablesJson: "" //default none
