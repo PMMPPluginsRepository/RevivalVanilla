@@ -10,6 +10,7 @@ namespace skh6075\revivalvanilla\data;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockBreakInfo;
+use pocketmine\block\BlockBreakInfo as BreakInfo;
 use pocketmine\block\BlockFactory;
 use pocketmine\block\BlockIdentifier as BID;
 use pocketmine\block\BlockToolType;
@@ -23,6 +24,7 @@ use pocketmine\Server;
 use pocketmine\utils\SingletonTrait;
 use skh6075\revivalvanilla\block\Campfire;
 use skh6075\revivalvanilla\block\Chain;
+use skh6075\revivalvanilla\block\Composter;
 use skh6075\revivalvanilla\block\tile\campfire\RegularCampfireTile;
 use skh6075\revivalvanilla\block\tile\campfire\SoulCampfireTile;
 use skh6075\revivalvanilla\data\resource\BlockIds;
@@ -56,6 +58,8 @@ final class Expansion{
 		$this->registerBlock(new Campfire(new BID(BlockIds::SOUL_CAMPFIRE, 0, ItemIds::SOUL_CAMPFIRE, SoulCampfireTile::class), "Soul Campfire", new BlockBreakInfo(2, BlockToolType::AXE)));
 
 		$this->registerBlock(new Chain(new BID(BlockIds::CHAIN, 0, ItemIds::CHAIN), "Chain", new BlockBreakInfo(5, BlockToolType::PICKAXE, ToolTier::WOOD()->getHarvestLevel())));
+
+		$this->registerBlock(new Composter(new BID(BlockIds::COMPOSTER, 0, ItemIds::COMPOSTER), "Composter", new BreakInfo(0.6, BlockToolType::AXE)));
 	}
 
 	private function registerBlock(Block $block) : void{
