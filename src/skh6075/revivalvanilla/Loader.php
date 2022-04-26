@@ -21,4 +21,8 @@ final class Loader extends PluginBase{
 		self::$instance = $this;
 		$this->expansion = Expansion::getInstance();
 	}
+
+	protected function onEnable() : void{
+		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
+	}
 }

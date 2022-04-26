@@ -30,6 +30,7 @@ use skh6075\revivalvanilla\block\tile\campfire\SoulCampfireTile;
 use skh6075\revivalvanilla\data\resource\BlockIds;
 use skh6075\revivalvanilla\data\resource\ItemIds;
 use skh6075\revivalvanilla\data\resource\TileIds;
+use skh6075\revivalvanilla\item\Shield;
 use skh6075\revivalvanilla\task\async\RuntimeIdsRegister;
 
 final class Expansion{
@@ -41,6 +42,7 @@ final class Expansion{
 
 	private function __construct(){
 		$this->registerAllTiles();
+		$this->registerAllItems();
 		$this->registerAllBlocks();
 		$this->registerAllRuntimeIds();
 		$this->registerAllCreativeItems();
@@ -51,6 +53,12 @@ final class Expansion{
 		$tileFactory = TileFactory::getInstance();
 		$tileFactory->register(RegularCampfireTile::class, [TileIds::CAMPFIRE, TileIds::LEGACY_CAMPFIRE]);
 		$tileFactory->register(SoulCampfireTile::class, [TileIds::SOUL_CAMPFIRE, TileIds::LEGACY_SOUL_CAMPFIRE]);
+	}
+
+	private function registerAllItems() : void{
+		/** @var ItemFactory $factory */
+		$factory = ItemFactory::getInstance();
+		$factory->register(new Shield(new IID(ItemIds::SHIELD, 0), "Shield"), true);
 	}
 
 	private function registerAllBlocks() : void{
