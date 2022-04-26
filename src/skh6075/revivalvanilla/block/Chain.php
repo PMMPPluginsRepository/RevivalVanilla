@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace skh6075\revivalvanilla\block;
 
-use pocketmine\block\Block;
+use pocketmine\block\Opaque;
 use pocketmine\block\utils\PillarRotationInMetadataTrait;
 use pocketmine\math\Axis;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Facing;
 
-class Chain extends Block{
+class Chain extends Opaque{
 	use PillarRotationInMetadataTrait;
 
 	protected function getAxisMetaShift() : int{
@@ -31,5 +31,9 @@ class Chain extends Block{
 
 	protected function recalculateCollisionBoxes() : array{
 		return [AxisAlignedBB::one()->trim($this->axis << 1, 0.3)->trim(Facing::opposite($this->axis << 1), 0.3)];
+	}
+
+	public function isSolid() : bool{
+		return false;
 	}
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace skh6075\revivalvanilla\block;
 
-use pocketmine\block\Transparent;
+use pocketmine\block\Opaque;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
 use pocketmine\item\Item;
@@ -17,7 +17,7 @@ use pocketmine\world\Position;
 use pocketmine\world\World;
 use skh6075\revivalvanilla\Loader;
 
-class Scaffolding extends Transparent{
+class Scaffolding extends Opaque{
 
 	/**
 	 * @phpstan-var array<int, TaskHandler>
@@ -70,15 +70,17 @@ class Scaffolding extends Transparent{
 					$this->taskHandler[$entity->getId()]->cancel();
 					unset($this->taskHandler[$entity->getId()]);
 				}
-				$entity->setHasBlockCollision(false);
 				return;
 			}
 			if($entity->isSneaking()){
-				$entity->setHasBlockCollision(true);
 				$entity->teleport(Position::fromObject($entity->getPosition()->add(0, -1, 0), $entity->getWorld())); //TODO..
 			}
 		}), 15);
 		$this->taskHandler[$entity->getId()] = $handler;
 		return true;
+	}
+
+	public function isSolid() : bool{
+		return false;
 	}
 }
