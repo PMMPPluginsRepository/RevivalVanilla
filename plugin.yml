@@ -1,7 +1,7 @@
 name: RevivalVanilla
 main: skh6075\revivalvanilla\Loader
 author: skh6075
-version: 1.0.4
+version: 1.0.5
 api: 4.0.0
 website: https://github.com/skh6075
 load: STARTUP

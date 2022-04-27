@@ -7,7 +7,7 @@ A plugin that implements vanilla similar to PocketMine
 
 ## Block Todo
 
-* [ ] Netherite related items and blocks
+* [x] Netherite related items and blocks
 * [x] Campfire and Soul_Campfire (+ Baking Details)
 * [x] Chain (+ Facing Details)
 * [x] Scaffolding (Specific orientation installation not implemented)
