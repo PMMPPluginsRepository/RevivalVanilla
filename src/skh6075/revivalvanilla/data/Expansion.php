@@ -15,7 +15,7 @@ use pocketmine\block\BlockFactory;
 use pocketmine\block\BlockIdentifier as BID;
 use pocketmine\block\BlockToolType;
 use pocketmine\block\tile\TileFactory;
-use pocketmine\data\bedrock\EntityLegacyIds;
+use pocketmine\entity\Entity;
 use pocketmine\entity\EntityDataHelper;
 use pocketmine\entity\EntityFactory;
 use pocketmine\entity\Location;
@@ -30,17 +30,18 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\Server;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
+use PrefixedLogger;
 use skh6075\revivalvanilla\block\Campfire;
 use skh6075\revivalvanilla\block\Chain;
 use skh6075\revivalvanilla\block\Composter;
 use skh6075\revivalvanilla\block\Scaffolding;
 use skh6075\revivalvanilla\block\tile\campfire\RegularCampfireTile;
 use skh6075\revivalvanilla\block\tile\campfire\SoulCampfireTile;
+use skh6075\revivalvanilla\data\mapping\EntityDataMapping;
 use skh6075\revivalvanilla\data\resource\BlockIds;
 use skh6075\revivalvanilla\data\resource\ItemIds;
 use skh6075\revivalvanilla\data\resource\TileIds;
 use skh6075\revivalvanilla\entity\LivingBase;
-use skh6075\revivalvanilla\entity\passive\Chicken;
 use skh6075\revivalvanilla\item\Shield;
 use skh6075\revivalvanilla\task\async\RuntimeIdsRegister;
 
@@ -51,9 +52,36 @@ final class Expansion{
 		return self::$instance ??= new self;
 	}
 
+	private PrefixedLogger $logger;
+
+	private EntityFactory $entityFactory;
+
+	private ItemFactory $itemFactory;
+
+	/** @noinspection PhpUndefinedMethodInspection */
 	private function __construct(){
+		$this->logger = new PrefixedLogger(Server::getInstance()->getLogger(), "Expansion");
+		$this->entityFactory = EntityFactory::getInstance();
+		$this->itemFactory = ItemFactory::getInstance();
+
+		foreach(EntityDataMapping::getInstance()->getAll() as $legacyId => $class){
+			$name = explode(DIRECTORY_SEPARATOR, $class)[count(explode(DIRECTORY_SEPARATOR, $class)) - 1]; //bad variable
+			$this->logger->notice("$name entity is registered [LegacyId: $legacyId]");
+			$this->entityFactory->register($class, function(World $world, CompoundTag $nbt) use ($class): LivingBase{
+				return new $class(EntityDataHelper::parseLocation($nbt, $world), $nbt);
+			}, [$class::getNetworkTypeId()]);
+
+			$this->itemFactory->register(new class(new IID(ItemIds::SPAWN_EGG, $legacyId), "Spawn Egg", $class) extends SpawnEgg{
+				public function __construct(IID $identifier, string $name, private string $entity){
+					parent::__construct($identifier, $name);
+				}
+
+				protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+					return new $this->entity(Location::fromObject($pos, $world, $yaw, $pitch));
+				}
+			}, true);
+		}
 		$this->registerAllTiles();
-		$this->registerAllEntities();
 		$this->registerAllItems();
 		$this->registerAllBlocks();
 		$this->registerAllRuntimeIds();
@@ -67,25 +95,11 @@ final class Expansion{
 		$tileFactory->register(SoulCampfireTile::class, [TileIds::SOUL_CAMPFIRE, TileIds::LEGACY_SOUL_CAMPFIRE]);
 	}
 
-	private function registerAllEntities(): void{
-		(function(): void{
-			/** @noinspection PhpUndefinedMethodInspection */
-			$this->register(Chicken::class, function(World $world, CompoundTag $nbt) : Chicken{
-				return new Chicken(EntityDataHelper::parseLocation($nbt, $world), $nbt);
-			}, ["Chicken", "minecraft:chicken"]);
-		})->call(EntityFactory::getInstance());
-	}
 
+	/** @noinspection PhpUndefinedMethodInspection */
 	private function registerAllItems() : void{
 		(function(): void{
-			/** @noinspection PhpUndefinedMethodInspection */
 			$this->register(new Shield(new IID(ItemIds::SHIELD, 0), "Shield"), true);
-			/** @noinspection PhpUndefinedMethodInspection */
-			$this->register(new class(new IID(ItemIds::SPAWN_EGG, EntityLegacyIds::CHICKEN), "Chicken Spawn Egg") extends SpawnEgg{
-				protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : LivingBase{
-					return new Chicken(Location::fromObject($pos, $world, $yaw, $pitch));
-				}
-			}, true);
 		})->call(ItemFactory::getInstance());
 	}
 
