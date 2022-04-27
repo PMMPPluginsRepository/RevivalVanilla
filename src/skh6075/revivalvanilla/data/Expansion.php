@@ -15,13 +15,21 @@ use pocketmine\block\BlockFactory;
 use pocketmine\block\BlockIdentifier as BID;
 use pocketmine\block\BlockToolType;
 use pocketmine\block\tile\TileFactory;
+use pocketmine\data\bedrock\EntityLegacyIds;
+use pocketmine\entity\EntityDataHelper;
+use pocketmine\entity\EntityFactory;
+use pocketmine\entity\Location;
 use pocketmine\inventory\CreativeInventory;
 use pocketmine\item\ItemBlock;
 use pocketmine\item\ItemFactory;
 use pocketmine\item\ItemIdentifier as IID;
+use pocketmine\item\SpawnEgg;
 use pocketmine\item\ToolTier;
+use pocketmine\math\Vector3;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\Server;
 use pocketmine\utils\SingletonTrait;
+use pocketmine\world\World;
 use skh6075\revivalvanilla\block\Campfire;
 use skh6075\revivalvanilla\block\Chain;
 use skh6075\revivalvanilla\block\Composter;
@@ -31,6 +39,8 @@ use skh6075\revivalvanilla\block\tile\campfire\SoulCampfireTile;
 use skh6075\revivalvanilla\data\resource\BlockIds;
 use skh6075\revivalvanilla\data\resource\ItemIds;
 use skh6075\revivalvanilla\data\resource\TileIds;
+use skh6075\revivalvanilla\entity\LivingBase;
+use skh6075\revivalvanilla\entity\passive\Chicken;
 use skh6075\revivalvanilla\item\Shield;
 use skh6075\revivalvanilla\task\async\RuntimeIdsRegister;
 
@@ -43,6 +53,7 @@ final class Expansion{
 
 	private function __construct(){
 		$this->registerAllTiles();
+		$this->registerAllEntities();
 		$this->registerAllItems();
 		$this->registerAllBlocks();
 		$this->registerAllRuntimeIds();
@@ -56,10 +67,26 @@ final class Expansion{
 		$tileFactory->register(SoulCampfireTile::class, [TileIds::SOUL_CAMPFIRE, TileIds::LEGACY_SOUL_CAMPFIRE]);
 	}
 
+	private function registerAllEntities(): void{
+		(function(): void{
+			/** @noinspection PhpUndefinedMethodInspection */
+			$this->register(Chicken::class, function(World $world, CompoundTag $nbt) : Chicken{
+				return new Chicken(EntityDataHelper::parseLocation($nbt, $world), $nbt);
+			}, ["Chicken", "minecraft:chicken"]);
+		})->call(EntityFactory::getInstance());
+	}
+
 	private function registerAllItems() : void{
-		/** @var ItemFactory $factory */
-		$factory = ItemFactory::getInstance();
-		$factory->register(new Shield(new IID(ItemIds::SHIELD, 0), "Shield"), true);
+		(function(): void{
+			/** @noinspection PhpUndefinedMethodInspection */
+			$this->register(new Shield(new IID(ItemIds::SHIELD, 0), "Shield"), true);
+			/** @noinspection PhpUndefinedMethodInspection */
+			$this->register(new class(new IID(ItemIds::SPAWN_EGG, EntityLegacyIds::CHICKEN), "Chicken Spawn Egg") extends SpawnEgg{
+				protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : LivingBase{
+					return new Chicken(Location::fromObject($pos, $world, $yaw, $pitch));
+				}
+			}, true);
+		})->call(ItemFactory::getInstance());
 	}
 
 	private function registerAllBlocks() : void{
