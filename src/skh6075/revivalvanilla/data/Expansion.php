@@ -19,11 +19,20 @@ use pocketmine\entity\Entity;
 use pocketmine\entity\EntityDataHelper;
 use pocketmine\entity\EntityFactory;
 use pocketmine\entity\Location;
+use pocketmine\inventory\ArmorInventory;
 use pocketmine\inventory\CreativeInventory;
+use pocketmine\item\Armor;
+use pocketmine\item\ArmorTypeInfo;
+use pocketmine\item\Axe;
+use pocketmine\item\Hoe;
+use pocketmine\item\Item;
 use pocketmine\item\ItemBlock;
 use pocketmine\item\ItemFactory;
 use pocketmine\item\ItemIdentifier as IID;
+use pocketmine\item\Pickaxe;
+use pocketmine\item\Shovel;
 use pocketmine\item\SpawnEgg;
+use pocketmine\item\Sword;
 use pocketmine\item\ToolTier;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -54,20 +63,21 @@ final class Expansion{
 
 	private PrefixedLogger $logger;
 
-	private EntityFactory $entityFactory;
-
 	private ItemFactory $itemFactory;
+
+	private BlockFactory $blockFactory;
 
 	/** @noinspection PhpUndefinedMethodInspection */
 	private function __construct(){
 		$this->logger = new PrefixedLogger(Server::getInstance()->getLogger(), "Expansion");
-		$this->entityFactory = EntityFactory::getInstance();
 		$this->itemFactory = ItemFactory::getInstance();
+		$this->blockFactory = BlockFactory::getInstance();
 
+		$entityFactory = EntityFactory::getInstance();
 		foreach(EntityDataMapping::getInstance()->getAll() as $legacyId => $class){
 			$name = explode(DIRECTORY_SEPARATOR, $class)[count(explode(DIRECTORY_SEPARATOR, $class)) - 1]; //bad variable
-			$this->logger->notice("$name entity is registered [LegacyId: $legacyId]");
-			$this->entityFactory->register($class, function(World $world, CompoundTag $nbt) use ($class): LivingBase{
+			$this->logger->debug("$name entity is registered [LegacyId: $legacyId]");
+			$entityFactory->register($class, function(World $world, CompoundTag $nbt) use ($class): LivingBase{
 				return new $class(EntityDataHelper::parseLocation($nbt, $world), $nbt);
 			}, [$class::getNetworkTypeId()]);
 
@@ -95,12 +105,25 @@ final class Expansion{
 		$tileFactory->register(SoulCampfireTile::class, [TileIds::SOUL_CAMPFIRE, TileIds::LEGACY_SOUL_CAMPFIRE]);
 	}
 
-
 	/** @noinspection PhpUndefinedMethodInspection */
 	private function registerAllItems() : void{
+		ExpansionPack::netheriteToolTier();
+
 		(function(): void{
 			$this->register(new Shield(new IID(ItemIds::SHIELD, 0), "Shield"), true);
-		})->call(ItemFactory::getInstance());
+
+			$this->register(new Item(new IID(ItemIds::NETHERITE_INGOT, 0), "Netherite Ingot"), true);
+			$this->register(new Item(new IID(ItemIds::NETHERITE_SCRAP, 0), "Netherite Scrap"), true);
+			$this->register(new Sword(new IID(ItemIds::NETHERITE_SWORD, 0), "Netherite Sword", ToolTier::NETHERITE()), true);
+			$this->register(new Pickaxe(new IID(ItemIds::NETHERITE_PICKAXE, 0), "Netherite Pickaxe", ToolTier::NETHERITE()), true);
+			$this->register(new Shovel(new IID(ItemIds::NETHERITE_SHOVEL, 0), "Netherite Shovel", ToolTier::NETHERITE()), true);
+			$this->register(new Axe(new IID(ItemIds::NETHERITE_AXE, 0), "Netherite Axe", ToolTier::NETHERITE()), true);
+			$this->register(new Hoe(new IID(ItemIds::NETHERITE_HOE, 0), "Netherite Hoe", ToolTier::NETHERITE()), true);
+			$this->register(new Armor(new IID(ItemIds::NETHERITE_HELMET, 0), "Netherite Helmet", new ArmorTypeInfo(3, 407, ArmorInventory::SLOT_HEAD)));
+			$this->register(new Armor(new IID(ItemIds::NETHERITE_CHESTPLATE, 0), "Netherite Chestplate", new ArmorTypeInfo(8, 592, ArmorInventory::SLOT_CHEST)));
+			$this->register(new Armor(new IID(ItemIds::NETHERITE_LEGGINGS, 0), "Netherite Leggings", new ArmorTypeInfo(6, 555, ArmorInventory::SLOT_LEGS)));
+			$this->register(new Armor(new IID(ItemIds::NETHERITE_BOOTS, 0), "Netherite Boots", new ArmorTypeInfo(3, 481, ArmorInventory::SLOT_FEET)));
+		})->call($this->itemFactory);
 	}
 
 	private function registerAllBlocks() : void{
@@ -112,16 +135,18 @@ final class Expansion{
 		$this->registerBlock(new Composter(new BID(BlockIds::COMPOSTER, 0, ItemIds::COMPOSTER), "Composter", new BreakInfo(0.6, BlockToolType::AXE)));
 
 		$this->registerBlock(new Scaffolding(new BID(BlockIds::SCAFFOLDING, 0, ItemIds::SCAFFOLDING), "Scaffolding", new BlockBreakInfo(0, BlockToolType::AXE | BlockToolType::SWORD)));
+
+		$this->registerBlock(new Block(new BID(BlockIds::NETHERITE_BLOCK, 0, ItemIds::NETHERITE_BLOCK), "Netherite", new BlockBreakInfo(50, BlockToolType::PICKAXE)));
+		$this->registerBlock(new Block(new BID(BlockIds::ANCIENT_DEBRIS, 0, ItemIds::ANCIENT_DEBRIS), "Ancient Debris", new BlockBreakInfo(30, BlockToolType::PICKAXE)));
 	}
 
 	private function registerBlock(Block $block) : void{
 		$idInfo = $block->getIdInfo();
 		$itemId = $idInfo->getItemId();
 		if(255 - $idInfo->getBlockId() !== $idInfo->getItemId()){
-			ItemFactory::getInstance()->register(new ItemBlock(new IID($itemId, 0), $block), true);
+			$this->itemFactory->register(new ItemBlock(new IID($itemId, 0), $block), true);
 		}
-
-		BlockFactory::getInstance()->register($block, true);
+		$this->blockFactory->register($block, true);
 	}
 
 	private function registerAllCreativeItems() : void{
