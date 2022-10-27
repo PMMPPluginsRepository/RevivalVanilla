@@ -1,4 +1,4 @@
-# This plugin is no longer maintained. For updated version, visit [here](skh6075/PMExpansion) instead.
+# This plugin is no longer maintained. For updated version, visit [here](https://github.com/skh6075/PMExpansion) instead.
 
 # RevivalVanilla
 A plugin that implements vanilla similar to PocketMine
